@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: backend_tarea_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tarea
+      POSTGRES_PASSWORD: tarea_dev
+      POSTGRES_DB: gastos_tarea
+    ports:
+      - "5434:5432"
+    volumes:
+      - tarea_pgdata:/var/lib/postgresql/data
+      - ./database/docker-init:/docker-entrypoint-initdb.d
+
+volumes:
+  tarea_pgdata:

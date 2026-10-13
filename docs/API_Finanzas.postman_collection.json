@@ -1,0 +1,1552 @@
+{
+  "info": {
+    "name": "API Finanzas Personales",
+    "description": "Colección generada desde el inventario de operaciones. Ejecuta primero \"Autenticación > POST Iniciar sesión\" (usuario demo) y el token se guarda solo. Para probar las rutas de administración inicia sesión con admin@gastos.app / Admin1234.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [
+        {
+          "name": "POST Registrar usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Crea la cuenta (contraseña con bcrypt) y sus preferencias en una transacción; devuelve un JWT.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ana@correo.com\",\n  \"password\": \"Secreta123\",\n  \"displayName\": \"Ana López\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Responde con token', () => pm.expect(body.data.token).to.be.a('string'));",
+                  "if (body.data && body.data.token) pm.collectionVariables.set('token', body.data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Iniciar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Valida credenciales y devuelve un JWT con vigencia configurable.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@gastos.app\",\n  \"password\": \"Demo1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Responde con token', () => pm.expect(body.data.token).to.be.a('string'));",
+                  "if (body.data && body.data.token) pm.collectionVariables.set('token', body.data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Consultar mi perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Datos del usuario autenticado con sus preferencias (include).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar mi perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Cambia nombre o correo (correo único).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Ana L.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT Cambiar contraseña",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "password"
+              ]
+            },
+            "description": "Requiere la contraseña actual.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Demo1234\",\n  \"newPassword\": \"NuevaClave456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios (administración)",
+      "item": [
+        {
+          "name": "GET Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Paginado, con búsqueda por nombre/correo y filtros de rol y estado.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT + rol admin"
+          }
+        },
+        {
+          "name": "GET Consultar usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT + rol admin"
+          }
+        },
+        {
+          "name": "PATCH Cambiar rol o estado de usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Activa/desactiva o cambia el rol. Un admin no puede degradarse a sí mismo.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT + rol admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Eliminar usuario",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Borra al usuario y en cascada toda su información.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT + rol admin"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cuentas / métodos de pago",
+      "item": [
+        {
+          "name": "POST Crear cuenta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts"
+              ]
+            },
+            "description": "Tarjeta de crédito, débito o efectivo.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BBVA Azul\",\n  \"type\": \"credit\",\n  \"color\": \"#1A4D8F\",\n  \"paymentDay\": 5,\n  \"creditLimit\": 25000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Listar cuentas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts"
+              ]
+            },
+            "description": "Filtra por tipo; las archivadas se ocultan salvo includeArchived=true.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Consultar cuenta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar cuenta",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BBVA Azul Oro\",\n  \"creditLimit\": 30000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH Archivar / reactivar cuenta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/:id/archive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                ":id",
+                "archive"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Oculta la cuenta conservando sus gastos.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"archived\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Eliminar cuenta",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Responde 409 si la cuenta tiene gastos (integridad referencial).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorías",
+      "item": [
+        {
+          "name": "POST Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ]
+            },
+            "description": "Nombre único por usuario sin distinguir mayúsculas.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Comida\",\n  \"color\": \"#E4572E\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Listar categorías",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Consultar categoría",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar categoría",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"color\": \"#29335C\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Eliminar categoría",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Sus gastos quedan \"Sin categoría\".\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contactos",
+      "item": [
+        {
+          "name": "POST Crear contacto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts"
+              ]
+            },
+            "description": "Detecta duplicados ignorando acentos, mayúsculas y espacios.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"José Pérez\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Listar contactos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts"
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Consultar contacto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar / archivar contacto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"archived\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Eliminar contacto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preferencias",
+      "item": [
+        {
+          "name": "GET Consultar preferencias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "preferences"
+              ]
+            },
+            "description": "Las crea con valores por defecto si no existen (findOrCreate).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar preferencias",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "preferences"
+              ]
+            },
+            "description": "Acceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": \"light\",\n  \"defaultBudget\": 12000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gastos",
+      "item": [
+        {
+          "name": "POST Registrar gasto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "expenses"
+              ]
+            },
+            "description": "Valida que la cuenta y la categoría pertenezcan al usuario.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 249.9,\n  \"date\": \"2026-10-10\",\n  \"description\": \"Supermercado\",\n  \"accountId\": 1,\n  \"categoryId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Listar gastos con filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "expenses"
+              ]
+            },
+            "description": "Paginación, rango de fechas, cuenta, categoría, montos, búsqueda y orden.\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Consultar gasto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "expenses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar gasto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "expenses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 300,\n  \"description\": \"Supermercado y farmacia\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Eliminar gasto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "expenses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Resumen de gastos por categoría",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "expenses",
+                "summary"
+              ]
+            },
+            "description": "Totales y porcentaje por categoría en un rango (función ventana).\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Presupuestos mensuales",
+      "item": [
+        {
+          "name": "PUT Definir presupuesto del mes",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets/:month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "budgets",
+                ":month"
+              ],
+              "variable": [
+                {
+                  "key": "month",
+                  "value": "2026-10"
+                }
+              ]
+            },
+            "description": "Crea o actualiza (UPSERT con ON CONFLICT). 201 si es nuevo, 200 si se actualizó.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 15000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Listar presupuestos con lo gastado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "budgets"
+              ]
+            },
+            "description": "Incluye gastado, restante y % usado por mes (LATERAL JOIN).\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Estado del presupuesto del mes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets/:month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "budgets",
+                ":month"
+              ],
+              "variable": [
+                {
+                  "key": "month",
+                  "value": "2026-10"
+                }
+              ]
+            },
+            "description": "Gastado, restante, promedio diario y proyección al cierre.\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "DELETE Eliminar presupuesto del mes",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets/:month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "budgets",
+                ":month"
+              ],
+              "variable": [
+                {
+                  "key": "month",
+                  "value": "2026-10"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gastos fijos",
+      "item": [
+        {
+          "name": "POST Crear gasto fijo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fixed-expenses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fixed-expenses"
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Renta\",\n  \"amount\": 8500,\n  \"dayOfMonth\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Listar gastos fijos con estado de pago",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fixed-expenses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fixed-expenses"
+              ]
+            },
+            "description": "Indica si cada uno está pagado en el mes y totales pagado/pendiente.\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Consultar gasto fijo con historial",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fixed-expenses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fixed-expenses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar gasto fijo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fixed-expenses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fixed-expenses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 9000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Eliminar gasto fijo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fixed-expenses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fixed-expenses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "POST Marcar gasto fijo como pagado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fixed-expenses/:id/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fixed-expenses",
+                ":id",
+                "payments"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "409 si ese mes ya estaba pagado.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"month\": \"2026-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Desmarcar pago del mes",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fixed-expenses/:id/payments/:month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fixed-expenses",
+                ":id",
+                "payments",
+                ":month"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                },
+                {
+                  "key": "month",
+                  "value": "2026-10"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patrimonio",
+      "item": [
+        {
+          "name": "POST Registrar activo o deuda",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/net-worth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "net-worth"
+              ]
+            },
+            "description": "Activo (saldo, dinero que te deben) o deuda con fecha límite.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Préstamo a José\",\n  \"kind\": \"asset\",\n  \"amount\": 1500,\n  \"contactId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Listar patrimonio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/net-worth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "net-worth"
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Consultar registro de patrimonio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/net-worth/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "net-worth",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "PUT Actualizar registro de patrimonio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/net-worth/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "net-worth",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE Eliminar registro de patrimonio",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/net-worth/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "net-worth",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Acceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Resumen de patrimonio neto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/net-worth/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "net-worth",
+                "summary"
+              ]
+            },
+            "description": "Activos - deudas, deudas vencidas, próximas a vencer y lo que te debe cada contacto.\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "GET Dashboard del mes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "dashboard"
+              ]
+            },
+            "description": "Gastado, comparativo vs mes anterior, top categorías, por cuenta, fijos pendientes y últimos gastos.\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        },
+        {
+          "name": "GET Tendencia mensual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/monthly-trend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "monthly-trend"
+              ]
+            },
+            "description": "Gastado vs presupuesto de los últimos N meses (generate_series).\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
+          }
+        }
+      ]
+    }
+  ]
+}
