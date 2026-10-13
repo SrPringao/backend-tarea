@@ -15,7 +15,7 @@
     "docs:excel": "node scripts/generar-excel.js",
     "docs:postman": "node scripts/generar-postman.js",
     "docs:all": "npm run test:report; npm run docs:excel && npm run docs:postman",
-    "zip": "cd .. && rm -f backend-tarea.zip && zip -rq backend-tarea.zip backend-tarea -x 'backend-tarea/node_modules/*' 'backend-tarea/.env' '*.DS_Store' && echo 'Generado ../backend-tarea.zip'"
+    "zip": "cd .. && rm -f backend-tarea.zip && zip -rq backend-tarea.zip backend-tarea -x 'backend-tarea/node_modules/*' 'backend-tarea/.env' '*.DS_Store' '*/~$*' && echo 'Generado ../backend-tarea.zip'"
   },
   "engines": {
     "node": ">=18"

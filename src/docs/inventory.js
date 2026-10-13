@@ -37,7 +37,7 @@ const modules = [
       { name: 'Consultar usuario', crud: 'R', method: 'GET', path: '/api/users/{id}', data: ORM, access: ADMIN, priority: 'Media', implemented: true, schemas: v.users.byId },
       { name: 'Cambiar rol o estado de usuario', crud: 'U', method: 'PATCH', path: '/api/users/{id}', data: ORM, access: ADMIN, priority: 'Media', implemented: true, schemas: v.users.update, description: 'Activa/desactiva o cambia el rol. Un admin no puede degradarse a sí mismo.', example: { isActive: false } },
       { name: 'Eliminar usuario', crud: 'D', method: 'DELETE', path: '/api/users/{id}', data: ORM, access: ADMIN, priority: 'Media', implemented: true, schemas: v.users.byId, description: 'Borra al usuario y en cascada toda su información.' },
-      { name: 'Eliminar mi propia cuenta', crud: 'D', method: 'DELETE', path: '/api/auth/me', access: JWT, priority: 'Baja', implemented: false, description: 'Baja voluntaria con confirmación de contraseña.' },
+      { name: 'Eliminar mi propia cuenta', crud: 'D', method: 'DELETE', path: '/api/auth/me', data: ORM, access: JWT, priority: 'Media', implemented: true, schemas: v.auth.deleteMe, description: 'Baja voluntaria: requiere la contraseña y borra en cascada toda la información del usuario. El último administrador activo no puede darse de baja.', example: { password: 'TuContrasena123' } },
     ],
   },
   {

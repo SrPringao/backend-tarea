@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 const ApiError = require('../utils/ApiError');
-const { ok } = require('../utils/response');
+const { ok, noContent } = require('../utils/response');
 const { sequelize, User, UserPreference } = require('../models/orm');
 
 function buildSession(user) {
@@ -76,4 +76,25 @@ async function changePassword(req, res) {
   return ok(res, { message: 'Contraseña actualizada' });
 }
 
-module.exports = { register, login, me, updateMe, changePassword };
+// Baja voluntaria: pide la contraseña y borra al usuario con toda su información (ON DELETE CASCADE)
+async function deleteMe(req, res) {
+  const { password } = req.validated.body;
+  const user = await User.unscoped().findByPk(req.user.id);
+
+  if (!(await bcrypt.compare(password, user.passwordHash))) {
+    throw ApiError.badRequest('La contraseña es incorrecta');
+  }
+
+  // El sistema no puede quedarse sin administradores activos
+  if (user.role === 'admin') {
+    const activeAdmins = await User.count({ where: { role: 'admin', isActive: true } });
+    if (activeAdmins <= 1) {
+      throw ApiError.badRequest('Eres el único administrador activo; asigna otro antes de eliminar tu cuenta');
+    }
+  }
+
+  await user.destroy();
+  return noContent(res);
+}
+
+module.exports = { register, login, me, updateMe, changePassword, deleteMe };

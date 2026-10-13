@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { api, newUser, bearer, closeConnections } = require('./helpers');
+const { api, newUser, login, bearer, closeConnections } = require('./helpers');
 
 afterAll(closeConnections);
 
@@ -61,6 +61,51 @@ describe('Autenticación', () => {
     expect(change.status).toBe(200);
     const res = await api().post('/api/auth/login').send({ email, password: 'Nueva1234' });
     expect(res.status).toBe(200);
+  });
+});
+
+describe('Eliminar mi propia cuenta', () => {
+  test('Sin contraseña -> 400', async () => {
+    const { token } = await newUser('baja');
+    const res = await api().delete('/api/auth/me').set(bearer(token)).send({});
+    expect(res.status).toBe(400);
+  });
+
+  test('Con contraseña incorrecta -> 400 y la cuenta sigue activa', async () => {
+    const { token } = await newUser('baja');
+    const res = await api().delete('/api/auth/me').set(bearer(token)).send({ password: 'Incorrecta1' });
+    expect(res.status).toBe(400);
+    expect((await api().get('/api/auth/me').set(bearer(token))).status).toBe(200);
+  });
+
+  test('El único administrador activo no puede darse de baja -> 400', async () => {
+    const adminToken = await login('admin@gastos.app', 'Admin1234');
+    const res = await api().delete('/api/auth/me').set(bearer(adminToken)).send({ password: 'Admin1234' });
+    expect(res.status).toBe(400);
+  });
+
+  test('Un administrador puede darse de baja si hay otro activo -> 204', async () => {
+    const adminToken = await login('admin@gastos.app', 'Admin1234');
+    const other = await newUser('admin2');
+    const promote = await api().patch(`/api/users/${other.user.id}`).set(bearer(adminToken)).send({ role: 'admin' });
+    expect(promote.status).toBe(200);
+    const res = await api().delete('/api/auth/me').set(bearer(other.token)).send({ password: other.password });
+    expect(res.status).toBe(204);
+  });
+
+  test('Con contraseña correcta borra al usuario y sus datos -> 204; el token y el login dejan de servir', async () => {
+    const { token, email, password } = await newUser('baja');
+    const account = await api().post('/api/accounts').set(bearer(token)).send({ name: 'Efectivo', type: 'cash' });
+    const expense = await api()
+      .post('/api/expenses')
+      .set(bearer(token))
+      .send({ amount: 100, date: '2026-09-10', accountId: account.body.data.id });
+    expect(expense.status).toBe(201);
+
+    const res = await api().delete('/api/auth/me').set(bearer(token)).send({ password });
+    expect(res.status).toBe(204);
+    expect((await api().get('/api/auth/me').set(bearer(token))).status).toBe(401);
+    expect((await api().post('/api/auth/login').send({ email, password })).status).toBe(401);
   });
 });
 

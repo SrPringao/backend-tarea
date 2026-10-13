@@ -322,6 +322,39 @@
             },
             "description": "Borra al usuario y en cascada toda su información.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT + rol admin"
           }
+        },
+        {
+          "name": "DELETE Eliminar mi propia cuenta",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Baja voluntaria: requiere la contraseña y borra en cascada toda la información del usuario. El último administrador activo no puede darse de baja.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"TuContrasena123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         }
       ]
     },

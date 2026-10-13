@@ -11,6 +11,7 @@ router.post('/register', authLimiter, validate(schemas.register), controller.reg
 router.post('/login', authLimiter, validate(schemas.login), controller.login);
 router.get('/me', authenticate, controller.me);
 router.put('/me', authenticate, validate(schemas.updateMe), controller.updateMe);
+router.delete('/me', authLimiter, authenticate, validate(schemas.deleteMe), controller.deleteMe);
 router.put('/password', authenticate, validate(schemas.changePassword), controller.changePassword);
 
 module.exports = router;

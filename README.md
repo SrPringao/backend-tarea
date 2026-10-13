@@ -9,20 +9,21 @@ Construido con **Node.js + Express 5 + PostgreSQL**, con acceso a datos dividido
 |---|---|
 | Listado global de operaciones (Excel, 60 % implementado) | `docs/Inventario_Operaciones.xlsx` (hojas Inventario, Resumen, Escenario de pruebas y Modelo de datos) |
 | Código fuente | este proyecto (`npm run zip` genera `../backend-tarea.zip` sin `node_modules` ni `.env`) |
-| Escenario de pruebas automatizado | `tests/` (Jest + Supertest, 84 casos) y hoja "Escenario de pruebas" del Excel |
+| Escenario de pruebas automatizado | `tests/` (Jest + Supertest, 89 casos) y hoja "Escenario de pruebas" del Excel |
 | Escenario de pruebas manual | `docs/API_Finanzas.postman_collection.json` |
+| Documento del escenario de pruebas (14 casos manuales con espacio para evidencias) | `docs/Escenario_de_Pruebas.docx` |
 | Documentación interactiva | `http://localhost:3000/api-docs` (Swagger / OpenAPI 3) |
-| Modelo de base de datos | `database/schema.sql` |
+| Modelo de base de datos | `database/schema.sql` y diagrama entidad-relación en `docs/modelo-er.md` |
 
 ## Inventario de operaciones
 
 - **87 operaciones** identificadas en 13 módulos.
-- **52 implementadas (59.8 %)**: 27 con Sequelize ORM y 25 con SQL nativo.
-- **35 documentadas como versiones futuras (40.2 %)**: recuperación de contraseña, OAuth, notificaciones push, importar/exportar, simulador, automatizaciones, etc.
+- **53 implementadas (60.9 %)**: 28 con Sequelize ORM y 25 con SQL nativo.
+- **34 documentadas como versiones futuras (39.1 %)**: recuperación de contraseña, OAuth, notificaciones push, importar/exportar, simulador, automatizaciones, etc.
 
 | Módulo | Acceso a datos | Endpoints implementados |
 |---|---|---|
-| Autenticación | Sequelize ORM | register, login, me (GET/PUT), password |
+| Autenticación | Sequelize ORM | register, login, me (GET/PUT/DELETE), password |
 | Usuarios (admin) | Sequelize ORM | listar, consultar, cambiar rol/estado, eliminar |
 | Cuentas | Sequelize ORM | CRUD + listar + archivar |
 | Categorías | Sequelize ORM | CRUD + listar |
@@ -46,9 +47,10 @@ src/
   routes/                Solo definen URL -> middlewares -> controlador
   controllers/           Reglas de negocio y respuesta HTTP
   models/
-    orm/                 Modelos Sequelize (User, UserPreference, Account, Category, Contact)
+    orm/                 Modelos Sequelize, un archivo por modelo (User, UserPreference, Account,
+                         Category, Contact); index.js solo define las relaciones
     sql/                 Consultas SQL nativas parametrizadas (gastos, presupuestos, fijos, patrimonio, reportes)
-  validators/            Esquemas Joi por módulo (mensajes en español)
+  validators/            Esquemas Joi, un archivo <módulo>.validator.js por módulo (mensajes en español)
   middlewares/           auth (JWT + roles), validate, rateLimit, errorHandler
   docs/                  inventory.js (fuente única) y openapi.js (Swagger generado)
   utils/                 ApiError, respuestas, helpers de SQL y fechas
@@ -86,6 +88,8 @@ npm run db:init             # crea tablas y carga datos demo
 npm run dev                 # http://localhost:3000  |  docs: http://localhost:3000/api-docs
 ```
 
+Para revisar o detener el contenedor de PostgreSQL: `docker compose ps` y `docker compose down` (los datos persisten en el volumen `tarea_pgdata`).
+
 Usuarios de demostración:
 
 | Correo | Contraseña | Rol |
@@ -97,10 +101,24 @@ Usuarios de demostración:
 
 ```bash
 npm run db:init:test        # una sola vez: prepara la base gastos_tarea_test
-npm test                    # 84 pruebas de integración
+npm test                    # 89 pruebas de integración
 npm run docs:all            # ejecuta las pruebas y regenera el Excel y la colección de Postman
 npm run zip                 # empaqueta el código para entregar
 ```
+
+### Probar desde Swagger
+
+1. Pide un token con `POST /api/auth/login` (desde Swagger o con curl):
+
+   ```bash
+   curl -X POST http://localhost:3000/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"demo@gastos.app","password":"Demo1234"}'
+   ```
+
+2. Copia el valor de `data.token` (sin la palabra `Bearer`).
+3. Abre `http://localhost:3000/api-docs`, pulsa **Authorize**, pega el token en `bearerAuth` y confirma.
+4. Para las rutas de administración repite el login con `admin@gastos.app` / `Admin1234`.
 
 ### Postman
 

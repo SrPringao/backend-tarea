@@ -29,7 +29,7 @@ function errorHandler(err, req, res, next) {
   } else if (pgCode === '23505') {
     status = 409;
     message = 'Ya existe un registro con esos datos';
-  } else if (pgCode === '23503') {
+  } else if (pgCode === '23503' || pgCode === '23001') {
     status = 409;
     message = 'No se puede completar la operación porque el registro tiene datos relacionados';
   } else if (pgCode === '23514' || pgCode === '22P02' || pgCode === '22007' || pgCode === '22008') {
