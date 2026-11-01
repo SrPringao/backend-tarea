@@ -1,0 +1,23 @@
+"Alerta de gasto: el presupuesto del mes o el límite de una categoría llegó al 80 % o al 100 %."
+type BudgetAlert {
+  "BUDGET (presupuesto del mes) o CATEGORY (límite de una categoría)"
+  type: String!
+  label: String!
+  categoryId: Int
+  month: String!
+  limit: Float!
+  spent: Float!
+  percentUsed: Float!
+  "Umbral alcanzado: 80 o 100."
+  threshold: Int!
+  "true si se notificó por correo en esta llamada (cada alerta se notifica una sola vez)."
+  notified: Boolean!
+}
+
+extend type Mutation {
+  """
+  OP-057. Revisa el presupuesto del mes y los límites por categoría; envía un correo con las alertas nuevas.
+  month YYYY-MM (por defecto el actual). También se ejecuta solo cada día si ENABLE_SCHEDULER=true. Requiere token.
+  """
+  checkBudgetAlerts(month: String): [BudgetAlert!]!
+}

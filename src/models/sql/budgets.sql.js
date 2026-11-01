@@ -71,4 +71,21 @@ async function remove(userId, month) {
   return rowCount > 0;
 }
 
-module.exports = { upsert, findAll, status, remove };
+// ----- Etapa 2 (GraphQL) -----
+
+// Categorías con límite mensual y lo gastado en el mes (para las alertas)
+async function categoryLimits(userId, month) {
+  const { rows } = await query(
+    `SELECT c.id, c.name, c.monthly_limit AS "limit", COALESCE(SUM(e.amount), 0) AS spent
+     FROM categories c
+     LEFT JOIN expenses e ON e.category_id = c.id
+       AND e.date >= TO_DATE($2, 'YYYY-MM') AND e.date < TO_DATE($2, 'YYYY-MM') + INTERVAL '1 month'
+     WHERE c.user_id = $1 AND c.monthly_limit IS NOT NULL
+     GROUP BY c.id, c.name, c.monthly_limit
+     ORDER BY c.name`,
+    [userId, month]
+  );
+  return rows;
+}
+
+module.exports = { upsert, findAll, status, remove, categoryLimits };

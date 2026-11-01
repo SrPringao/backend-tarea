@@ -25,11 +25,11 @@ async function seed(client) {
   const [adminHash, demoHash] = await Promise.all([bcrypt.hash('Admin1234', config.bcryptRounds), bcrypt.hash('Demo1234', config.bcryptRounds)]);
 
   await client.query(
-    `INSERT INTO users (email, display_name, password_hash, role) VALUES ('admin@gastos.app', 'Administrador', $1, 'admin')`,
+    `INSERT INTO users (email, display_name, password_hash, role, email_verified_at) VALUES ('admin@gastos.app', 'Administrador', $1, 'admin', NOW())`,
     [adminHash]
   );
   const { rows: [demo] } = await client.query(
-    `INSERT INTO users (email, display_name, password_hash) VALUES ('demo@gastos.app', 'Usuario Demo', $1) RETURNING id`,
+    `INSERT INTO users (email, display_name, password_hash, email_verified_at) VALUES ('demo@gastos.app', 'Usuario Demo', $1, NOW()) RETURNING id`,
     [demoHash]
   );
   const uid = demo.id;

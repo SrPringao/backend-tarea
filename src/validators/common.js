@@ -55,10 +55,13 @@ const pagination = {
   limit: Joi.number().integer().min(1).max(100).default(20),
 };
 
+// Texto obligatorio sin espacios sobrantes y con longitud máxima
+const trimmed = (max) => Joi.string().trim().min(1).max(max);
+
 // Contraseña: mínimo 8 caracteres con al menos una letra y un número
 const password = Joi.string()
   .min(8)
   .max(72)
   .pattern(/^(?=.*[A-Za-z])(?=.*\d).+$/, 'al menos una letra y un número');
 
-module.exports = { Joi, id, idParams, isoDate, month, money, color, dayOfMonth, pagination, password };
+module.exports = { Joi, id, idParams, isoDate, month, money, color, dayOfMonth, pagination, password, trimmed };

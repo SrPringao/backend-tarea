@@ -1,0 +1,99 @@
+"Gasto variable."
+type Expense {
+  id: Int!
+  amount: Float!
+  "YYYY-MM-DD"
+  date: String!
+  description: String
+  accountId: Int!
+  accountName: String!
+  accountType: String!
+  categoryId: Int
+  categoryName: String
+  categoryColor: String
+  "URL temporal (1 hora) del ticket o comprobante, si se adjuntó."
+  receiptUrl: String
+  "Partes del gasto que pagan otras personas."
+  splits: [ExpenseSplit!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"Sugerencia para autocompletar al registrar un gasto."
+type ExpenseSuggestion {
+  description: String!
+  timesUsed: Int!
+  averageAmount: Float!
+  "Cuenta usada con más frecuencia con esta descripción."
+  accountId: Int
+  "Categoría usada con más frecuencia con esta descripción."
+  categoryId: Int
+}
+
+type ImportError {
+  "Línea del CSV (la 1 es el encabezado)."
+  line: Int!
+  message: String!
+}
+
+type ImportResult {
+  "Gastos importados. Es 0 si hubo algún error: la importación es todo o nada."
+  imported: Int!
+  totalAmount: Float!
+  errors: [ImportError!]!
+}
+
+type CsvExport {
+  filename: String!
+  contentType: String!
+  rows: Int!
+  "Contenido del CSV (UTF-8 con BOM, columnas: fecha, monto, descripcion, cuenta, categoria)."
+  content: String!
+}
+
+"Parte de un gasto que paga un contacto; genera un activo de patrimonio (te debe)."
+type ExpenseSplit {
+  id: Int!
+  expenseId: Int!
+  contactId: Int!
+  contactName: String!
+  amount: Float!
+  "Registro de patrimonio creado para cobrar esta parte."
+  netWorthEntryId: Int
+  createdAt: DateTime!
+}
+
+type SplitResult {
+  expense: Expense!
+  splits: [ExpenseSplit!]!
+  "Lo que te toca pagar a ti (monto del gasto menos las partes)."
+  yourShare: Float!
+}
+
+input SplitPartInput {
+  contactId: Int!
+  amount: Float!
+}
+
+extend type Query {
+  "OP-048. Sugerencias de gasto según lo que el usuario ha registrado antes (autocompletar). Requiere token."
+  expenseSuggestions(prefix: String!, limit: Int = 5): [ExpenseSuggestion!]!
+  "OP-050. Exporta los gastos de un rango a CSV (compatible con Excel; protegido contra inyección de fórmulas). Requiere token."
+  exportExpensesCsv(from: String!, to: String!): CsvExport!
+}
+
+extend type Mutation {
+  """
+  OP-049. Importa gastos desde un CSV (máximo 500 filas, 512 KB). Envía el archivo (file, multipart) o el texto (csv).
+  Columnas: fecha, monto, descripcion, cuenta, categoria (o en inglés). La cuenta se busca por nombre o por mapeo de tarjeta.
+  Todo o nada: si alguna fila tiene error no se importa ninguna. Requiere token.
+  """
+  importExpensesCsv(file: File, csv: String): ImportResult!
+  "OP-051. Adjunta el ticket o comprobante (JPEG, PNG o PDF, máximo 2 MB) con multipart/form-data. Requiere token."
+  attachReceipt(expenseId: Int!, file: File!): Expense!
+  """
+  OP-052. Divide un gasto entre contactos. Cada parte crea un registro de patrimonio "te debe" ligado al contacto.
+  Las partes no pueden sumar más que el gasto. Requiere token.
+  """
+  splitExpense(expenseId: Int!, parts: [SplitPartInput!]!): SplitResult!
+}

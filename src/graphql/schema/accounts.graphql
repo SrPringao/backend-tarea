@@ -1,0 +1,51 @@
+"Tarjeta de crédito, débito o efectivo."
+type Account {
+  id: Int!
+  name: String!
+  "credit, debit o cash"
+  type: String!
+  color: String
+  "Día límite de pago (solo tarjetas de crédito)."
+  paymentDay: Int
+  creditLimit: Float
+  "Posición definida con reorderAccounts."
+  sortOrder: Int!
+  "URL temporal (1 hora) de la imagen de la tarjeta, si se subió una."
+  imageUrl: String
+  archivedAt: DateTime
+  createdAt: DateTime!
+}
+
+"Estado de cuenta mensual de una tarjeta de crédito."
+type CreditCardStatement {
+  account: Account!
+  month: String!
+  periodStart: String!
+  periodEnd: String!
+  "Fecha límite de pago (día de pago del mes siguiente)."
+  dueDate: String!
+  "Total de gastos con la tarjeta en el periodo."
+  balance: Float!
+  expenseCount: Int!
+  "Aproximado: mayor entre 1.5 % del saldo y 1.25 % del límite, sin pasar del saldo."
+  minimumPayment: Float!
+  creditLimit: Float
+  availableCredit: Float
+  "Porcentaje del límite utilizado."
+  utilization: Float
+}
+
+extend type Query {
+  "OP-025. Estado de cuenta de una tarjeta de crédito; month YYYY-MM (por defecto el mes actual). Requiere token."
+  creditCardStatement(accountId: Int!, month: String): CreditCardStatement!
+}
+
+extend type Mutation {
+  "OP-024. Define el orden de las cuentas según la posición de cada id en la lista. Requiere token."
+  reorderAccounts(ids: [Int!]!): [Account!]!
+  """
+  OP-023. Sube la imagen de la tarjeta (JPEG o PNG, máximo 2 MB) con multipart/form-data.
+  Se guarda en Supabase Storage (bucket privado) o en disco si Supabase no está configurado. Requiere token.
+  """
+  uploadAccountImage(accountId: Int!, file: File!): Account!
+}

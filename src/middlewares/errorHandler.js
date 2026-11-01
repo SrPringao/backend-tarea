@@ -12,29 +12,16 @@ function errorHandler(err, req, res, next) {
   let message = 'Error interno del servidor';
   let details;
 
-  const pgCode = err.code || err.parent?.code;
+  const known = ApiError.fromDatabase(err);
 
-  if (err instanceof ApiError) {
-    ({ status, message, details } = err);
+  if (known) {
+    ({ status, message, details } = known);
   } else if (err.type === 'entity.parse.failed') {
     status = 400;
     message = 'El cuerpo de la petición no es un JSON válido';
   } else if (err.type === 'entity.too.large') {
     status = 413;
     message = 'El cuerpo de la petición es demasiado grande';
-  } else if (err.name === 'SequelizeValidationError') {
-    status = 400;
-    message = 'Datos inválidos';
-    details = err.errors.map((e) => ({ field: e.path, message: e.message }));
-  } else if (pgCode === '23505') {
-    status = 409;
-    message = 'Ya existe un registro con esos datos';
-  } else if (pgCode === '23503') {
-    status = 409;
-    message = 'No se puede completar la operación porque el registro tiene datos relacionados';
-  } else if (pgCode === '23514' || pgCode === '22P02' || pgCode === '22007' || pgCode === '22008') {
-    status = 400;
-    message = 'Algún valor no cumple las reglas de la base de datos';
   }
 
   if (status === 500) console.error('[ERROR]', err);

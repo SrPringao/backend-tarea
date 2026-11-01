@@ -1,0 +1,45 @@
+type DailySpendingDay {
+  "YYYY-MM-DD"
+  date: String!
+  total: Float!
+  count: Int!
+  "Acumulado del mes hasta este día."
+  cumulative: Float!
+}
+
+type DailySpending {
+  month: String!
+  total: Float!
+  budget: Float
+  "Presupuesto disponible por día (presupuesto / días del mes)."
+  dailyBudget: Float
+  "Todos los días del mes, incluidos los que no tienen gastos."
+  days: [DailySpendingDay!]!
+}
+
+type CategoryComparisonRow {
+  categoryId: Int
+  categoryName: String!
+  categoryColor: String
+  totalA: Float!
+  totalB: Float!
+  "totalB - totalA"
+  difference: Float!
+  "Cambio porcentual de A a B (null si en A no hubo gasto)."
+  percentChange: Float
+}
+
+type CategoryComparison {
+  monthA: String!
+  monthB: String!
+  totalA: Float!
+  totalB: Float!
+  categories: [CategoryComparisonRow!]!
+}
+
+extend type Query {
+  "OP-080. Gasto por día del mes con acumulado; month YYYY-MM (por defecto el actual). Requiere token."
+  dailySpending(month: String): DailySpending!
+  "OP-081. Compara el gasto por categoría entre dos meses (por defecto el mes anterior contra el actual). Requiere token."
+  categoryComparison(monthA: String, monthB: String): CategoryComparison!
+}

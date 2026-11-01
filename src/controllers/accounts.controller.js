@@ -24,7 +24,7 @@ async function list(req, res) {
   if (type) where.type = type;
   if (!includeArchived) where.archivedAt = null;
 
-  const accounts = await Account.findAll({ where, order: [['name', 'ASC']] });
+  const accounts = await Account.findAll({ where, order: [['sortOrder', 'ASC'], ['name', 'ASC']] });
   return ok(res, accounts);
 }
 
@@ -56,7 +56,8 @@ async function remove(req, res) {
   try {
     await account.destroy();
   } catch (error) {
-    if (error instanceof ForeignKeyConstraintError) {
+    // PostgreSQL 13-17 reporta la restricción como 23503 (ForeignKeyConstraintError); 18+ como 23001
+    if (error instanceof ForeignKeyConstraintError || error.parent?.code === '23001') {
       throw ApiError.conflict('La cuenta tiene gastos registrados; archívala en lugar de eliminarla');
     }
     throw error;

@@ -1,0 +1,62 @@
+"Usuario autenticado (nunca incluye el hash de la contraseña)."
+type User {
+  id: ID!
+  email: String!
+  displayName: String!
+  "user o admin"
+  role: String!
+  isActive: Boolean!
+  "true si ya confirmó su correo con el enlace que se le envió."
+  emailVerified: Boolean!
+  emailVerifiedAt: DateTime
+  createdAt: DateTime!
+}
+
+"Sesión: token de acceso (JWT) y refresh token para renovarlo."
+type Session {
+  "JWT para la cabecera Authorization: Bearer TOKEN."
+  token: String!
+  tokenType: String!
+  "Vigencia del token de acceso (p. ej. 8h)."
+  expiresIn: String!
+  "Token de un solo uso para obtener una sesión nueva con refreshToken."
+  refreshToken: String!
+  user: User!
+}
+
+extend type Query {
+  "Datos del usuario autenticado. Requiere token."
+  me: User!
+}
+
+extend type Mutation {
+  """
+  OP-006. Envía al correo un código de 6 dígitos para restablecer la contraseña (vence en 15 minutos).
+  Responde lo mismo exista o no el correo, para no revelar qué cuentas existen. Pública.
+  """
+  requestPasswordReset(email: String!): OperationResult!
+
+  """
+  OP-007. Cambia la contraseña con el código recibido (máximo 5 intentos por código).
+  Cierra las sesiones abiertas en otros dispositivos y envía un aviso de "tu contraseña cambió". Pública.
+  """
+  resetPassword(email: String!, code: String!, newPassword: String!): OperationResult!
+
+  """
+  OP-008. Entrega una sesión nueva a cambio de un refresh token (rotación: cada refresh token sirve una vez).
+  Si se reutiliza uno ya usado, se cierran todas las sesiones del usuario. Pública.
+  """
+  refreshToken(refreshToken: String!): Session!
+
+  """
+  OP-009. Cierra la sesión: revoca el token de acceso actual y el refresh token indicado,
+  o todos los refresh tokens con allDevices: true. Requiere token.
+  """
+  logout(refreshToken: String, allDevices: Boolean): OperationResult!
+
+  "OP-010. Confirma el correo con el token del enlace enviado al registrarse. Pública."
+  verifyEmail(token: String!): User!
+
+  "OP-010. Reenvía el correo de confirmación de cuenta al usuario autenticado. Requiere token."
+  sendVerificationEmail: OperationResult!
+}

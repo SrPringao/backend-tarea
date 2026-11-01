@@ -1,0 +1,44 @@
+"Token de API personal para automatizaciones (Atajos de iOS, scripts). El valor completo solo se muestra al crearlo."
+type ApiToken {
+  id: Int!
+  name: String!
+  lastUsedAt: DateTime
+  revokedAt: DateTime
+  createdAt: DateTime!
+}
+
+type CreatedApiToken {
+  "Valor del token (empieza con fin_). Guárdalo: no se vuelve a mostrar."
+  token: String!
+  apiToken: ApiToken!
+}
+
+"Relaciona el nombre con el que llega una tarjeta (p. ej. desde Atajos de iOS) con una cuenta."
+type CardNameMapping {
+  id: Int!
+  cardName: String!
+  account: Account!
+  createdAt: DateTime!
+}
+
+extend type Query {
+  "OP-085. Tokens de API del usuario (sin el valor secreto). Requiere token."
+  apiTokens: [ApiToken!]!
+  "OP-086. Mapeos de nombres de tarjeta del usuario. Requiere token."
+  cardNameMappings: [CardNameMapping!]!
+}
+
+extend type Mutation {
+  "OP-085. Crea un token de API personal (máximo 10 activos). Requiere token."
+  createApiToken(name: String!): CreatedApiToken!
+  "OP-085. Revoca un token de API; deja de funcionar de inmediato. Requiere token."
+  revokeApiToken(id: Int!): ApiToken!
+  "OP-086. Mapea un nombre de tarjeta a una cuenta propia. Requiere token."
+  createCardNameMapping(cardName: String!, accountId: Int!): CardNameMapping!
+  """
+  OP-087. Registra un gasto desde una automatización (webhook).
+  Se autentica con la cabecera X-API-Key (no con Bearer). La tarjeta se resuelve por el mapeo
+  de nombres o por el nombre exacto de la cuenta; la categoría (opcional) por su nombre.
+  """
+  webhookExpense(amount: Float!, card: String!, description: String, date: String, category: String): Expense!
+}
