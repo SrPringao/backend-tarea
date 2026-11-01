@@ -1,11 +1,11 @@
-// Genera docs/Inventario_Operaciones.xlsx a partir del inventario (src/docs/inventory.js)
+// Genera docs/Documentacion_Inventario_Operaciones.xlsx a partir del inventario (src/docs/inventory.js)
 // y de los resultados reales de Jest (docs/resultados-pruebas.json, creado con npm run test:report).
 const fs = require('fs');
 const path = require('path');
 const ExcelJS = require('exceljs');
 const { modules, operations } = require('../src/docs/inventory');
 
-const OUT = path.join(__dirname, '../docs/Inventario_Operaciones.xlsx');
+const OUT = path.join(__dirname, '../docs/Documentacion_Inventario_Operaciones.xlsx');
 const RESULTS = path.join(__dirname, '../docs/resultados-pruebas.json');
 
 const COLORS = {

@@ -12,7 +12,7 @@ Construido con **Node.js + Express 5 + PostgreSQL** (local o **Supabase**) y exp
 
 | Entregable | Ubicación |
 |---|---|
-| Listado global de operaciones (Excel) | `docs/Inventario_Operaciones.xlsx` (Inventario con columna API y etapa, Resumen, Escenario de pruebas y Modelo de datos) |
+| Listado global de operaciones (Excel) | `docs/Documentacion_Inventario_Operaciones.xlsx` (Inventario con columna API y etapa, Resumen, Escenario de pruebas y Modelo de datos) |
 | Código fuente | este proyecto (`npm run zip` genera `../backend-tarea.zip` con exactamente los archivos del último commit: nunca incluye `.env`, `node_modules` ni archivos subidos) |
 | Documentación REST | `http://localhost:3000/api-docs` (Swagger UI / OpenAPI 3) |
 | Documentación GraphQL | `http://localhost:3000/graphql` (GraphiQL), `docs/graphql/index.html` (página generada) y `docs/schema.graphql` |
