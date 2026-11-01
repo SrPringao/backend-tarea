@@ -1,5 +1,7 @@
 const { Joi, password, trimmed } = require('./common');
 
+const email = Joi.string().trim().email().max(160);
+
 const auth = {
   register: {
     body: Joi.object({
@@ -28,6 +30,19 @@ const auth = {
       }),
     }),
   },
+  verifyEmailLink: {
+    query: Joi.object({ token: Joi.string().max(200).required() }),
+  },
+  // Argumentos de las operaciones GraphQL (etapa 2)
+  requestPasswordResetArgs: Joi.object({ email: email.required() }),
+  resetPasswordArgs: Joi.object({
+    email: email.required(),
+    code: Joi.string().pattern(/^\d{6}$/, '6 dígitos').required(),
+    newPassword: password.required(),
+  }),
+  refreshTokenArgs: Joi.object({ refreshToken: Joi.string().max(200).required() }),
+  logoutArgs: Joi.object({ refreshToken: Joi.string().max(200), allDevices: Joi.boolean().default(false) }),
+  verifyEmailArgs: Joi.object({ token: Joi.string().max(200).required() }),
   deleteMe: {
     body: Joi.object({ password: Joi.string().required() }),
   },

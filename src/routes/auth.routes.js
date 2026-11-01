@@ -9,6 +9,7 @@ const router = Router();
 
 router.post('/register', authLimiter, validate(schemas.register), controller.register);
 router.post('/login', authLimiter, validate(schemas.login), controller.login);
+router.get('/verify-email', authLimiter, validate(schemas.verifyEmailLink), controller.verifyEmailLink);
 router.get('/me', authenticate, controller.me);
 router.put('/me', authenticate, validate(schemas.updateMe), controller.updateMe);
 router.delete('/me', authLimiter, authenticate, validate(schemas.deleteMe), controller.deleteMe);

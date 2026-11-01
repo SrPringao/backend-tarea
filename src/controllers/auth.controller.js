@@ -1,18 +1,14 @@
 // Autenticación y perfil (Sequelize ORM)
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 const ApiError = require('../utils/ApiError');
 const { ok, noContent } = require('../utils/response');
 const { sequelize, User, UserPreference } = require('../models/orm');
+const authService = require('../services/auth.service');
+const mail = require('../services/mail');
+const { escapeHtml } = require('../services/mail/templates');
 
-function buildSession(user) {
-  const token = jwt.sign({ sub: user.id, role: user.role }, config.jwt.secret, {
-    algorithm: 'HS256',
-    expiresIn: config.jwt.expiresIn,
-  });
-  return { token, tokenType: 'Bearer', expiresIn: config.jwt.expiresIn, user: user.toJSON() };
-}
+const { buildSession } = authService;
 
 async function emailTaken(email, exceptId) {
   const user = await User.findOne({ where: { email: email.toLowerCase() } });
@@ -32,7 +28,10 @@ async function register(req, res) {
     return created;
   });
 
-  return ok(res, buildSession(user), 201);
+  // El correo de confirmación no bloquea el registro: si falla, se puede reenviar después
+  authService.sendVerificationEmail(user).catch((error) => console.error('[CORREO] Verificación no enviada:', error.message));
+
+  return ok(res, await buildSession(user), 201);
 }
 
 async function login(req, res) {
@@ -44,7 +43,7 @@ async function login(req, res) {
   if (!valid) throw ApiError.unauthorized('Correo o contraseña incorrectos');
   if (!user.isActive) throw ApiError.forbidden('Tu cuenta está desactivada, contacta al administrador');
 
-  return ok(res, buildSession(user));
+  return ok(res, await buildSession(user));
 }
 
 async function me(req, res) {
@@ -73,7 +72,28 @@ async function changePassword(req, res) {
   }
 
   await user.update({ passwordHash: await bcrypt.hash(newPassword, config.bcryptRounds) });
+  mail.sendInBackground(user.email, 'passwordChanged', { name: user.displayName });
   return ok(res, { message: 'Contraseña actualizada' });
+}
+
+// Destino del enlace del correo de confirmación. Es un GET porque se abre desde el cliente de correo;
+// responde HTML para que la persona vea el resultado en el navegador.
+async function verifyEmailLink(req, res) {
+  const page = (title, message, status) =>
+    res
+      .status(status)
+      .type('html')
+      .send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
+<body style="font-family:Arial,sans-serif;background:#f4f6f8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
+<div style="background:#fff;padding:32px;border-radius:8px;max-width:420px;text-align:center"><h1 style="color:#1f4e79;font-size:22px">${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p></div></body></html>`);
+
+  try {
+    const user = await authService.verifyEmail(req.validated.query.token);
+    return page('Correo confirmado', `Listo, ${user.displayName}. Tu correo quedó verificado; ya puedes volver a la app.`, 200);
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+    return page('Enlace no válido', error.message, error.status);
+  }
 }
 
 // Baja voluntaria: pide la contraseña y borra al usuario con toda su información (ON DELETE CASCADE)
@@ -97,4 +117,4 @@ async function deleteMe(req, res) {
   return noContent(res);
 }
 
-module.exports = { register, login, me, updateMe, changePassword, deleteMe };
+module.exports = { register, login, me, updateMe, changePassword, deleteMe, verifyEmailLink };
