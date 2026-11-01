@@ -17,4 +17,8 @@ router.use('/fixed-expenses', require('./fixedExpenses.routes'));
 router.use('/net-worth', require('./netWorth.routes'));
 router.use('/reports', require('./reports.routes'));
 
+// Etapa 2: servicio de correo y descarga firmada de archivos locales
+router.use('/notifications', require('./notifications.routes'));
+router.use('/files', require('./files.routes'));
+
 module.exports = router;
