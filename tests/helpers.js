@@ -20,4 +20,23 @@ async function login(email, password) {
 
 const bearer = (token) => ({ Authorization: `Bearer ${token}` });
 
-module.exports = { api, newUser, login, bearer, closeConnections };
+// Petición GraphQL (JSON). Devuelve la respuesta de supertest.
+function gql(query, variables = {}, token, headers = {}) {
+  const req = api().post('/graphql').set(headers).send({ query, variables });
+  return token ? req.set(bearer(token)) : req;
+}
+
+// Petición GraphQL con archivo (multipart, GraphQL multipart request spec)
+function gqlUpload(query, variables, filePath, buffer, filename, token) {
+  return api()
+    .post('/graphql')
+    .set(bearer(token))
+    .field('operations', JSON.stringify({ query, variables }))
+    .field('map', JSON.stringify({ 0: [filePath] }))
+    .attach('0', buffer, filename);
+}
+
+// Código del primer error GraphQL (UNAUTHENTICATED, BAD_USER_INPUT, ...)
+const errorCode = (res) => res.body.errors?.[0]?.extensions?.code;
+
+module.exports = { api, newUser, login, bearer, gql, gqlUpload, errorCode, closeConnections };
