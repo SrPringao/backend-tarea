@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "API Finanzas Personales",
-    "description": "Colección generada desde el inventario de operaciones. Ejecuta primero \"Autenticación > POST Iniciar sesión\" (usuario demo) y el token se guarda solo. Para probar las rutas de administración inicia sesión con admin@gastos.app / Admin1234.",
+    "description": "Colección generada desde el inventario de operaciones.\n1. Ejecuta \"Autenticación > POST Iniciar sesión\" (usuario demo): el token y el refresh token se guardan solos.\n2. Las carpetas REST corresponden a la etapa 1; la carpeta \"GraphQL\" contiene el 40 % restante (etapa 2).\n3. Para las operaciones de administración inicia sesión con admin@gastos.app / Admin1234.\n4. Para webhookExpense ejecuta antes \"GraphQL createApiToken\": guarda {{apiKey}} automáticamente.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -21,6 +21,14 @@
     },
     {
       "key": "token",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "apiKey",
       "value": ""
     }
   ],
@@ -71,7 +79,8 @@
                 "exec": [
                   "const body = pm.response.json();",
                   "pm.test('Responde con token', () => pm.expect(body.data.token).to.be.a('string'));",
-                  "if (body.data && body.data.token) pm.collectionVariables.set('token', body.data.token);"
+                  "if (body.data && body.data.token) pm.collectionVariables.set('token', body.data.token);",
+                  "if (body.data && body.data.refreshToken) pm.collectionVariables.set('refreshToken', body.data.refreshToken);"
                 ]
               }
             }
@@ -120,7 +129,8 @@
                 "exec": [
                   "const body = pm.response.json();",
                   "pm.test('Responde con token', () => pm.expect(body.data.token).to.be.a('string'));",
-                  "if (body.data && body.data.token) pm.collectionVariables.set('token', body.data.token);"
+                  "if (body.data && body.data.token) pm.collectionVariables.set('token', body.data.token);",
+                  "if (body.data && body.data.refreshToken) pm.collectionVariables.set('refreshToken', body.data.refreshToken);"
                 ]
               }
             }
@@ -1578,6 +1588,1021 @@
             },
             "description": "Gastado vs presupuesto de los últimos N meses (generate_series).\n\nAcceso a datos: SQL nativo | Seguridad: JWT"
           }
+        }
+      ]
+    },
+    {
+      "name": "Servicios (correo y archivos)",
+      "item": [
+        {
+          "name": "GET Confirmar correo desde el enlace",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "Destino del enlace del correo de confirmación; responde una página HTML. Es REST porque se abre desde el cliente de correo.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST Enviar notificación informativa por correo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "email"
+              ]
+            },
+            "description": "Un administrador envía un aviso a un usuario registrado. Limitado a 30 correos por hora; el contenido se escapa en el HTML.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT + rol admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"00000000-0000-4000-8000-000000000000\",\n  \"subject\": \"Mantenimiento programado\",\n  \"message\": \"El sábado de 2 a 4 a. m. la app no estará disponible.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET Descargar archivo con URL firmada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "files"
+              ]
+            },
+            "description": "Sirve la imagen o comprobante guardado en disco cuando no hay Supabase Storage. La URL expira en 1 hora y no se puede alterar.\n\nAcceso a datos: Almacenamiento | Seguridad: URL firmada (HMAC)",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GraphQL (etapa 2)",
+      "description": "Todas las peticiones van a POST {{baseUrl}}/graphql.",
+      "item": [
+        {
+          "name": "Autenticación",
+          "item": [
+            {
+              "name": "GraphQL requestPasswordReset",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-006 · Solicitar recuperación de contraseña. Envía un código de 6 dígitos al correo (vence en 15 min). Responde igual exista o no el correo.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($email: String!) {\n  requestPasswordReset(email: $email) { ok message }\n}",
+                    "variables": "{\n  \"email\": \"demo@gastos.app\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL resetPassword",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-007 · Restablecer contraseña con código. Cambia la contraseña con el código (máx. 5 intentos), cierra otras sesiones y envía aviso por correo.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($email: String!, $code: String!, $newPassword: String!) {\n  resetPassword(email: $email, code: $code, newPassword: $newPassword) { ok message }\n}",
+                    "variables": "{\n  \"email\": \"demo@gastos.app\",\n  \"code\": \"123456\",\n  \"newPassword\": \"NuevaClave123\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL refreshToken",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-008 · Renovar token (refresh token). Rotación de refresh tokens de un solo uso; si se reutiliza uno se cierran todas las sesiones.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($refreshToken: String!) {\n  refreshToken(refreshToken: $refreshToken) { token refreshToken expiresIn user { email } }\n}",
+                    "variables": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-009 · Cerrar sesión (revocar token). Revoca el JWT actual (jti) y el refresh token, o todos con allDevices.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($refreshToken: String) {\n  logout(refreshToken: $refreshToken) { ok message }\n}",
+                    "variables": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL verifyEmail",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-010 · Verificar correo electrónico. Confirma el correo con el token del enlace enviado al registrarse; permite reenviarlo.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($token: String!) {\n  verifyEmail(token: $token) { email emailVerified }\n}",
+                    "variables": "{\n  \"token\": \"TOKEN_DEL_CORREO\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL sendVerificationEmail",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-010 · Verificar correo electrónico. Confirma el correo con el token del enlace enviado al registrarse; permite reenviarlo.\n\nAcceso a datos: Sequelize ORM | Seguridad: Pública",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  sendVerificationEmail { ok message }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cuentas / métodos de pago",
+          "item": [
+            {
+              "name": "GraphQL uploadAccountImage",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-023 · Subir imagen de la tarjeta. Subida multipart (JPEG/PNG, 2 MB) a Supabase Storage (bucket privado) o disco; URL firmada temporal.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT\n\nSubida de archivo: en Body > form-data elige el archivo en la clave \"0\".",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "operations",
+                      "type": "text",
+                      "value": "{\"query\":\"mutation ($accountId: Int!, $file: File!) {\\n  uploadAccountImage(accountId: $accountId, file: $file) { id name imageUrl }\\n}\",\"variables\":{\"accountId\":1,\"file\":null}}"
+                    },
+                    {
+                      "key": "map",
+                      "type": "text",
+                      "value": "{\"0\":[\"variables.file\"]}"
+                    },
+                    {
+                      "key": "0",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "GraphQL reorderAccounts",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-024 · Reordenar cuentas. Define el orden de las cuentas; el listado REST lo respeta.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($ids: [Int!]!) {\n  reorderAccounts(ids: $ids) { id name sortOrder }\n}",
+                    "variables": "{\n  \"ids\": [\n    3,\n    1,\n    2\n  ]\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL creditCardStatement",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-025 · Estado de cuenta de tarjeta de crédito. Saldo del periodo, pago mínimo aproximado, fecha límite, crédito disponible y utilización.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query ($accountId: Int!, $month: String) {\n  creditCardStatement(accountId: $accountId, month: $month) {\n    month periodStart periodEnd dueDate balance minimumPayment availableCredit utilization\n  }\n}",
+                    "variables": "{\n  \"accountId\": 1,\n  \"month\": \"2026-10\"\n}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Categorías",
+          "item": [
+            {
+              "name": "GraphQL createDefaultCategories",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-031 · Crear categorías predeterminadas. Crea solo las categorías base que falten (compara sin acentos ni mayúsculas).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  createDefaultCategories { id name color }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL mergeCategories",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-032 · Fusionar categorías. Mueve gastos y gastos fijos a la categoría destino y elimina la origen (transacción).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($sourceId: Int!, $targetId: Int!) {\n  mergeCategories(sourceId: $sourceId, targetId: $targetId) { movedExpenses movedFixedExpenses target { id name } }\n}",
+                    "variables": "{\n  \"sourceId\": 3,\n  \"targetId\": 1\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL setCategoryLimit",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-033 · Límite de gasto por categoría. Límite mensual por categoría; se usa en las alertas de presupuesto.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($categoryId: Int!, $monthlyLimit: Float) {\n  setCategoryLimit(categoryId: $categoryId, monthlyLimit: $monthlyLimit) { name monthlyLimit spentThisMonth }\n}",
+                    "variables": "{\n  \"categoryId\": 1,\n  \"monthlyLimit\": 3000\n}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Contactos",
+          "item": [
+            {
+              "name": "GraphQL mergeContacts",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-039 · Fusionar contactos duplicados. Mueve registros de patrimonio y gastos divididos al contacto destino (transacción).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($sourceId: Int!, $targetId: Int!) {\n  mergeContacts(sourceId: $sourceId, targetId: $targetId) { movedNetWorthEntries movedExpenseSplits target { name } }\n}",
+                    "variables": "{\n  \"sourceId\": 2,\n  \"targetId\": 1\n}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gastos",
+          "item": [
+            {
+              "name": "GraphQL expenseSuggestions",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-048 · Sugerencias de gasto (autocompletar). Descripciones por frecuencia con cuenta y categoría más usadas (MODE() WITHIN GROUP).\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query ($prefix: String!) {\n  expenseSuggestions(prefix: $prefix, limit: 5) { description timesUsed averageAmount accountId categoryId }\n}",
+                    "variables": "{\n  \"prefix\": \"Super\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL importExpensesCsv",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-049 · Importar gastos desde CSV. CSV por archivo o texto, máx. 500 filas; todo o nada con errores por línea.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($csv: String) {\n  importExpensesCsv(csv: $csv) { imported totalAmount errors { line message } }\n}",
+                    "variables": "{\n  \"csv\": \"fecha,monto,descripcion,cuenta,categoria\\n2026-10-05,120.50,Gasolina,BBVA Azul,Transporte\\n2026-10-06,89.90,Farmacia,Efectivo,Salud\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL exportExpensesCsv",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-050 · Exportar gastos a Excel / CSV. CSV compatible con Excel, protegido contra inyección de fórmulas.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query ($from: String!, $to: String!) {\n  exportExpensesCsv(from: $from, to: $to) { filename rows content }\n}",
+                    "variables": "{\n  \"from\": \"2026-10-01\",\n  \"to\": \"2026-10-28\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL attachReceipt",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-051 · Adjuntar ticket / comprobante. JPEG/PNG/PDF (2 MB) validado por sus bytes iniciales; URL firmada temporal.\n\nAcceso a datos: SQL nativo | Seguridad: JWT\n\nSubida de archivo: en Body > form-data elige el archivo en la clave \"0\".",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "operations",
+                      "type": "text",
+                      "value": "{\"query\":\"mutation ($expenseId: Int!, $file: File!) {\\n  attachReceipt(expenseId: $expenseId, file: $file) { id description receiptUrl }\\n}\",\"variables\":{\"expenseId\":1,\"file\":null}}"
+                    },
+                    {
+                      "key": "map",
+                      "type": "text",
+                      "value": "{\"0\":[\"variables.file\"]}"
+                    },
+                    {
+                      "key": "0",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "GraphQL splitExpense",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-052 · Dividir gasto entre contactos. Cada parte crea un activo de patrimonio \"te debe\" ligado al contacto (transacción).\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($expenseId: Int!, $parts: [SplitPartInput!]!) {\n  splitExpense(expenseId: $expenseId, parts: $parts) {\n    yourShare\n    splits { contactName amount netWorthEntryId }\n  }\n}",
+                    "variables": "{\n  \"expenseId\": 3,\n  \"parts\": [\n    {\n      \"contactId\": 1,\n      \"amount\": 50\n    }\n  ]\n}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Presupuestos mensuales",
+          "item": [
+            {
+              "name": "GraphQL checkBudgetAlerts",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-057 · Alertas al rebasar el presupuesto. Alertas al 80 % y 100 % del presupuesto y límites por categoría; correo una sola vez por alerta.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($month: String) {\n  checkBudgetAlerts(month: $month) { type label spent limit percentUsed threshold notified }\n}",
+                    "variables": "{\n  \"month\": \"2026-10\"\n}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gastos fijos",
+          "item": [
+            {
+              "name": "GraphQL fixedExpenseToExpense",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-065 · Generar gasto real al pagar. Registra el gasto del pago y marca el mes como pagado (transacción).\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($fixedExpenseId: Int!, $month: String!, $accountId: Int!) {\n  fixedExpenseToExpense(fixedExpenseId: $fixedExpenseId, month: $month, accountId: $accountId) {\n    expense { id amount date description }\n    payment { month expenseId }\n  }\n}",
+                    "variables": "{\n  \"fixedExpenseId\": 2,\n  \"month\": \"2026-10\",\n  \"accountId\": 2\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL sendPaymentReminders",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-066 · Recordatorios de pago. Correo con gastos fijos por vencer; también como tarea programada diaria.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  sendPaymentReminders(daysAhead: 5) { name amount dayOfMonth notified }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Patrimonio",
+          "item": [
+            {
+              "name": "GraphQL reorderNetWorth",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-073 · Reordenar registros de patrimonio. UPDATE con UNNEST ... WITH ORDINALITY.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($ids: [Int!]!) {\n  reorderNetWorth(ids: $ids) { id label kind sortOrder }\n}",
+                    "variables": "{\n  \"ids\": [\n    3,\n    2,\n    1,\n    5,\n    4\n  ]\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL syncNetWorthWithAccount",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-074 · Sincronizar saldo con gastos de la cuenta. La deuda de una tarjeta toma el saldo de la tarjeta en el mes actual.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($entryId: Int!) {\n  syncNetWorthWithAccount(entryId: $entryId) { previousAmount month entry { label amount } }\n}",
+                    "variables": "{\n  \"entryId\": 4\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL createProjection",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-075 · Crear proyección (simulador). Aportación mensual con interés compuesto; parte del patrimonio neto actual si no se indica.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  createProjection(name: \"Ahorro 5 años\", monthlyContribution: 2000, annualRate: 10, months: 60) {\n    id startingAmount finalAmount totalContributed interestEarned\n    schedule(step: 12) { month balance }\n  }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL projections",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-076 · Listar proyecciones. Incluye monto final, interés ganado y calendario por periodo.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query {\n  projections { id name months finalAmount interestEarned }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL deleteProjection",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-077 · Eliminar proyección. \n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation ($id: Int!) {\n  deleteProjection(id: $id) { ok message }\n}",
+                    "variables": "{\n  \"id\": 1\n}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reportes",
+          "item": [
+            {
+              "name": "GraphQL dailySpending",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-080 · Gasto diario del mes. Todos los días del mes (generate_series) con acumulado (función ventana) y presupuesto diario.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query ($month: String) {\n  dailySpending(month: $month) { month total dailyBudget days { date total cumulative } }\n}",
+                    "variables": "{\n  \"month\": \"2026-10\"\n}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL categoryComparison",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-081 · Comparativo por categoría entre meses. Agregación condicional con FILTER; diferencia y cambio porcentual.\n\nAcceso a datos: SQL nativo | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query {\n  categoryComparison {\n    monthA monthB totalA totalB\n    categories { categoryName totalA totalB difference percentChange }\n  }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notificaciones",
+          "item": [
+            {
+              "name": "GraphQL registerDevice",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-082 · Registrar dispositivo para push (FCM). Guarda el token de FCM; el envío de push se integrará con la app Flutter.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  registerDevice(token: \"fcm-token-de-ejemplo-123456\", platform: \"android\") { id platform lastSeenAt }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL devices",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-083 · Listar dispositivos registrados. \n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query {\n  devices { id platform lastSeenAt }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL sendDailySummary",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-084 · Resumen diario programado. Correo con el resumen del día anterior; tarea programada a las 08:00 (ENABLE_SCHEDULER).\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT + rol admin\n\nRequiere iniciar sesión con admin@gastos.app / Admin1234.",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  sendDailySummary { date sent skipped }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Automatización",
+          "item": [
+            {
+              "name": "GraphQL createApiToken",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-085 · Tokens de API personales. Token fin_... mostrado una sola vez; se guarda su hash.\n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  createApiToken(name: \"Atajos iPhone\") { token apiToken { id name } }\n}",
+                    "variables": "{}"
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const t = pm.response.json().data?.createApiToken?.token; if (t) pm.collectionVariables.set('apiKey', t);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GraphQL createCardNameMapping",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-086 · Mapeo de nombres de tarjeta (Atajos iOS). \n\nAcceso a datos: Sequelize ORM | Seguridad: JWT",
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  createCardNameMapping(cardName: \"BBVA **1234\", accountId: 1) { id cardName account { name } }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            },
+            {
+              "name": "GraphQL webhookExpense",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/graphql",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                },
+                "description": "OP-087 · Registrar gasto vía webhook. Autenticado con cabecera X-API-Key; resuelve la tarjeta por mapeo o nombre.\n\nAcceso a datos: Sequelize ORM | Seguridad: Token de API (X-API-Key)",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation {\n  webhookExpense(amount: 59.90, card: \"BBVA **1234\", description: \"Oxxo\", category: \"Comida\") { id amount accountName categoryName date }\n}",
+                    "variables": "{}"
+                  }
+                }
+              }
+            }
+          ]
         }
       ]
     }

@@ -15,7 +15,11 @@ const tagDescriptions = {
   FixedExpenses: 'Gastos fijos y sus pagos (SQL nativo)',
   NetWorth: 'Activos y deudas (SQL nativo)',
   Reports: 'Reportes y dashboard (SQL nativo)',
+  Services: 'Etapa 2: confirmación de correo, notificaciones por correo y descarga firmada de archivos',
 };
+
+// Swagger documenta solo la API REST; las operaciones GraphQL se documentan en /graphql y docs/graphql/
+const restOperations = operations.filter((o) => o.implemented && o.api === 'REST');
 
 const errorResponse = (description) => ({
   description,
@@ -47,7 +51,7 @@ function parameters(schemas = {}, path) {
 }
 
 function buildOperation(op) {
-  const isPublic = op.access === 'Pública';
+  const isPublic = op.access === 'Pública' || op.access.startsWith('URL firmada');
   const operation = {
     tags: [op.tag],
     operationId: op.id,
@@ -88,20 +92,22 @@ function buildOperation(op) {
 
 function buildSpec() {
   const paths = {};
-  for (const op of operations.filter((o) => o.implemented)) {
+  for (const op of restOperations) {
     paths[op.path] = paths[op.path] || {};
     paths[op.path][op.method.toLowerCase()] = buildOperation(op);
   }
 
-  const usedTags = new Set(operations.filter((o) => o.implemented).map((o) => o.tag));
+  const usedTags = new Set(restOperations.map((o) => o.tag));
 
   return {
     openapi: '3.0.3',
     info: {
       title: 'API Finanzas Personales',
-      version: '1.0.0',
+      version: '2.0.0',
       description: [
         'Backend para la app Flutter de control de gastos, presupuestos y patrimonio.',
+        '',
+        'Esta página documenta la **API REST**. La **API GraphQL** (40 % restante de la lógica de negocio) está en `/graphql`, con GraphiQL y su documentación en `docs/graphql/index.html`.',
         '',
         '**Cómo probar:** ejecuta `POST /api/auth/login` con `demo@gastos.app` / `Demo1234`, copia `data.token` y pégalo en el botón **Authorize**.',
         '',
