@@ -14,3 +14,7 @@ yarn-error.log*
 
 # Archivos temporales de Office
 ~$*
+
+# Archivos subidos en modo local (sin Supabase)
+uploads/
+uploads-test/
