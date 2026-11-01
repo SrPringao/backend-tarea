@@ -1,0 +1,27 @@
+"Categoría de gasto."
+type Category {
+  id: Int!
+  name: String!
+  color: String
+  "Límite de gasto mensual (null si no tiene)."
+  monthlyLimit: Float
+  "Gastado en la categoría durante el mes actual."
+  spentThisMonth: Float!
+  createdAt: DateTime!
+}
+
+type MergeCategoriesResult {
+  "Categoría que conserva los gastos."
+  target: Category!
+  movedExpenses: Int!
+  movedFixedExpenses: Int!
+}
+
+extend type Mutation {
+  "OP-031. Crea las categorías predeterminadas que falten (Comida, Transporte, Hogar...). Devuelve solo las nuevas. Requiere token."
+  createDefaultCategories: [Category!]!
+  "OP-032. Pasa los gastos y gastos fijos de sourceId a targetId y elimina sourceId. Requiere token."
+  mergeCategories(sourceId: Int!, targetId: Int!): MergeCategoriesResult!
+  "OP-033. Define (o quita con null) el límite de gasto mensual; se usa en checkBudgetAlerts. Requiere token."
+  setCategoryLimit(categoryId: Int!, monthlyLimit: Float): Category!
+}

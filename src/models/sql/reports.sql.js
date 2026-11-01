@@ -84,4 +84,56 @@ async function monthlyTrend(userId, months) {
   return rows;
 }
 
-module.exports = { dashboard, monthlyTrend };
+// ----- Etapa 2 (GraphQL) -----
+
+// Gasto por día del mes con acumulado (incluye días sin gastos; función ventana para el acumulado)
+async function dailySpending(userId, month) {
+  const { rows } = await query(
+    `WITH days AS (
+       SELECT d::date AS day
+       FROM GENERATE_SERIES(TO_DATE($2, 'YYYY-MM'), TO_DATE($2, 'YYYY-MM') + INTERVAL '1 month' - INTERVAL '1 day', INTERVAL '1 day') d
+     ), totals AS (
+       SELECT d.day, COALESCE(SUM(e.amount), 0) AS total, COUNT(e.id)::int AS count
+       FROM days d
+       LEFT JOIN expenses e ON e.user_id = $1 AND e.date = d.day
+       GROUP BY d.day
+     )
+     SELECT TO_CHAR(day, 'YYYY-MM-DD') AS date, total, count,
+            SUM(total) OVER (ORDER BY day) AS cumulative
+     FROM totals ORDER BY day`,
+    [userId, month]
+  );
+  return rows;
+}
+
+// Gasto por categoría en dos meses con agregación condicional (FILTER): una sola pasada sobre los gastos
+// e incluye las categorías que solo aparecen en uno de los dos meses
+async function categoryComparison(userId, monthA, monthB) {
+  const { rows } = await query(
+    `WITH per_category AS (
+       SELECT e.category_id,
+              COALESCE(SUM(e.amount) FILTER (WHERE TO_CHAR(e.date, 'YYYY-MM') = $2), 0) AS total_a,
+              COALESCE(SUM(e.amount) FILTER (WHERE TO_CHAR(e.date, 'YYYY-MM') = $3), 0) AS total_b
+       FROM expenses e
+       WHERE e.user_id = $1
+         AND e.date >= LEAST(TO_DATE($2, 'YYYY-MM'), TO_DATE($3, 'YYYY-MM'))
+         AND e.date <  GREATEST(TO_DATE($2, 'YYYY-MM'), TO_DATE($3, 'YYYY-MM')) + INTERVAL '1 month'
+       GROUP BY e.category_id
+     )
+     SELECT p.category_id AS "categoryId",
+            COALESCE(c.name, 'Sin categoría') AS "categoryName",
+            c.color AS "categoryColor",
+            p.total_a AS "totalA",
+            p.total_b AS "totalB",
+            p.total_b - p.total_a AS difference,
+            CASE WHEN p.total_a = 0 THEN NULL ELSE ROUND((p.total_b - p.total_a) * 100.0 / p.total_a, 2) END AS "percentChange"
+     FROM per_category p
+     LEFT JOIN categories c ON c.id = p.category_id
+     WHERE p.total_a > 0 OR p.total_b > 0
+     ORDER BY GREATEST(p.total_a, p.total_b) DESC`,
+    [userId, monthA, monthB]
+  );
+  return rows;
+}
+
+module.exports = { dashboard, monthlyTrend, dailySpending, categoryComparison };

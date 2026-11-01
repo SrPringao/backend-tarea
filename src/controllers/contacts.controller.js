@@ -2,16 +2,7 @@
 const ApiError = require('../utils/ApiError');
 const { ok, noContent } = require('../utils/response');
 const { Contact } = require('../models/orm');
-
-// "  José  Pérez" y "jose perez" generan la misma llave y se consideran duplicados
-function nameKey(name) {
-  return name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+const { normalizeKey: nameKey } = require('../utils/text');
 
 async function findOwned(userId, id) {
   const contact = await Contact.findOne({ where: { id, userId } });

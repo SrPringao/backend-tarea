@@ -1,4 +1,4 @@
-const { Joi, id, idParams, month, money, dayOfMonth, trimmed } = require('./common');
+const { Joi, id, idParams, isoDate, month, money, dayOfMonth, trimmed } = require('./common');
 
 const fixedExpenseBody = {
   name: trimmed(60),
@@ -16,6 +16,16 @@ const fixedExpenses = {
   byId: { params: idParams },
   pay: { params: idParams, body: Joi.object({ month: month.required(), amount: money }) },
   unpay: { params: Joi.object({ id: id.required(), month: month.required() }) },
+
+  // Argumentos de las operaciones GraphQL (etapa 2)
+  toExpenseArgs: Joi.object({
+    fixedExpenseId: id.required(),
+    month: month.required(),
+    accountId: id.required(),
+    date: isoDate,
+    amount: money,
+  }),
+  remindersArgs: Joi.object({ daysAhead: Joi.number().integer().min(0).max(15).default(3) }),
 };
 
 module.exports = fixedExpenses;

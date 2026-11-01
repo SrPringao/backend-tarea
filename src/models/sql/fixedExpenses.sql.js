@@ -100,4 +100,56 @@ async function unmarkPaid(userId, id, month) {
   return rowCount > 0;
 }
 
-module.exports = { findAll, findById, paymentHistory, create, update, remove, markPaid, unmarkPaid };
+// ----- Etapa 2 (GraphQL) -----
+
+async function findPayment(client, fixedExpenseId, month) {
+  const { rows } = await client.query(
+    'SELECT id, amount, expense_id AS "expenseId" FROM fixed_expense_payments WHERE fixed_expense_id = $1 AND month = $2 FOR UPDATE',
+    [fixedExpenseId, month]
+  );
+  return rows[0] || null;
+}
+
+// Registra el gasto real del pago y lo liga al pago del mes (creándolo si no existía)
+async function createExpenseForPayment(client, userId, fixed, { month, accountId, date, amount }) {
+  const { rows: [expense] } = await client.query(
+    `INSERT INTO expenses (user_id, account_id, category_id, amount, date, description)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [userId, accountId, fixed.categoryId, amount, date, fixed.name]
+  );
+  const { rows: [payment] } = await client.query(
+    `INSERT INTO fixed_expense_payments (fixed_expense_id, user_id, month, amount, expense_id)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (fixed_expense_id, month) DO UPDATE SET expense_id = EXCLUDED.expense_id
+     RETURNING id, fixed_expense_id AS "fixedExpenseId", month, amount, expense_id AS "expenseId", paid_at AS "paidAt"`,
+    [fixed.id, userId, month, amount, expense.id]
+  );
+  return { expenseId: expense.id, payment };
+}
+
+// Gastos fijos sin pagar en el mes cuyo día de pago cae entre fromDay y toDay
+async function unpaidDueBetween(userId, month, fromDay, toDay) {
+  const { rows } = await query(
+    `SELECT f.id, f.name, f.amount, f.day_of_month AS "dayOfMonth"
+     FROM fixed_expenses f
+     LEFT JOIN fixed_expense_payments p ON p.fixed_expense_id = f.id AND p.month = $2
+     WHERE f.user_id = $1 AND p.id IS NULL AND f.day_of_month BETWEEN $3 AND $4
+     ORDER BY f.day_of_month, f.name`,
+    [userId, month, fromDay, toDay]
+  );
+  return rows;
+}
+
+module.exports = {
+  findAll,
+  findById,
+  paymentHistory,
+  create,
+  update,
+  remove,
+  markPaid,
+  unmarkPaid,
+  findPayment,
+  createExpenseForPayment,
+  unpaidDueBetween,
+};

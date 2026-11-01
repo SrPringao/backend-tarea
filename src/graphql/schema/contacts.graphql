@@ -1,0 +1,19 @@
+"Persona que te debe dinero."
+type Contact {
+  id: Int!
+  name: String!
+  archivedAt: DateTime
+  createdAt: DateTime!
+}
+
+type MergeContactsResult {
+  "Contacto que conserva los registros."
+  target: Contact!
+  movedNetWorthEntries: Int!
+  movedExpenseSplits: Int!
+}
+
+extend type Mutation {
+  "OP-039. Pasa los registros de patrimonio y gastos divididos de sourceId a targetId y elimina sourceId. Requiere token."
+  mergeContacts(sourceId: Int!, targetId: Int!): MergeContactsResult!
+}

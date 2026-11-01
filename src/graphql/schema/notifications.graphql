@@ -1,0 +1,32 @@
+"Dispositivo de la app móvil registrado para notificaciones push (token de Firebase Cloud Messaging)."
+type Device {
+  id: Int!
+  token: String!
+  "android, ios o web"
+  platform: String!
+  lastSeenAt: DateTime!
+  createdAt: DateTime!
+}
+
+type DailySummaryResult {
+  date: String!
+  "Correos enviados."
+  sent: Int!
+  "Usuarios omitidos: sin correo verificado, sin gastos ese día o ya notificados."
+  skipped: Int!
+}
+
+extend type Query {
+  "OP-083. Dispositivos registrados del usuario. Requiere token."
+  devices: [Device!]!
+}
+
+extend type Mutation {
+  "OP-082. Registra o actualiza el dispositivo para notificaciones push. Requiere token."
+  registerDevice(token: String!, platform: String!): Device!
+  """
+  OP-084. Envía por correo el resumen de gastos de un día (por defecto ayer) a cada usuario activo con correo verificado.
+  También se ejecuta solo cada mañana si ENABLE_SCHEDULER=true. Requiere rol admin.
+  """
+  sendDailySummary(date: String): DailySummaryResult!
+}

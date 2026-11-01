@@ -36,6 +36,16 @@ const expenses = {
   summary: {
     query: Joi.object({ from: isoDate.required(), to: isoDate.required() }),
   },
+
+  // Argumentos de las operaciones GraphQL (etapa 2)
+  suggestionsArgs: Joi.object({ prefix: Joi.string().trim().min(1).max(60).required(), limit: Joi.number().integer().min(1).max(20).default(5) }),
+  importArgs: Joi.object({ file: Joi.any(), csv: Joi.string() }),
+  exportArgs: Joi.object({ from: isoDate.required(), to: isoDate.required() }),
+  attachReceiptArgs: Joi.object({ expenseId: id.required(), file: Joi.any().required() }),
+  splitArgs: Joi.object({
+    expenseId: id.required(),
+    parts: Joi.array().items(Joi.object({ contactId: id.required(), amount: money.required() })).min(1).max(20).required(),
+  }),
 };
 
 module.exports = expenses;

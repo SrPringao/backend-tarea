@@ -1,0 +1,32 @@
+"""
+API GraphQL de Finanzas Personales (etapa 2).
+
+Autenticación: envía `Authorization: Bearer TOKEN` (el token se obtiene con POST /api/auth/login).
+Las fechas son texto `YYYY-MM-DD`, los meses `YYYY-MM` y los montos son pesos con 2 decimales.
+"""
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+"Archivo subido con multipart/form-data (GraphQL multipart request spec)."
+scalar File
+
+"Fecha y hora en formato ISO 8601 (UTC), p. ej. 2026-10-31T18:30:00.000Z."
+scalar DateTime
+
+type Query {
+  "Comprueba que el servidor GraphQL responde."
+  ping: String!
+}
+
+type Mutation {
+  "Comprueba que las mutaciones están disponibles."
+  ping: String!
+}
+
+"Resultado simple de una operación."
+type OperationResult {
+  ok: Boolean!
+  message: String!
+}

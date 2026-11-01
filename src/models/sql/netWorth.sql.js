@@ -110,4 +110,74 @@ async function summary(userId) {
   };
 }
 
-module.exports = { findAll, findById, create, update, remove, summary };
+// ----- Etapa 2 (GraphQL) -----
+
+async function countOwned(userId, ids) {
+  const { rows } = await query('SELECT COUNT(*)::int AS n FROM net_worth_entries WHERE user_id = $1 AND id = ANY($2::int[])', [userId, ids]);
+  return rows[0].n;
+}
+
+// Un solo UPDATE: cada id toma como sort_order su posición en el arreglo (WITH ORDINALITY)
+async function reorder(userId, ids) {
+  await query(
+    `UPDATE net_worth_entries n SET sort_order = o.position - 1, updated_at = NOW()
+     FROM UNNEST($2::int[]) WITH ORDINALITY AS o(id, position)
+     WHERE n.id = o.id AND n.user_id = $1`,
+    [userId, ids]
+  );
+}
+
+// Total de gastos de una cuenta en un mes (saldo de la tarjeta en ese periodo)
+async function accountMonthBalance(userId, accountId, month) {
+  const { rows } = await query(
+    `SELECT COALESCE(SUM(amount), 0) AS balance FROM expenses
+     WHERE user_id = $1 AND account_id = $2
+       AND date >= TO_DATE($3, 'YYYY-MM') AND date < TO_DATE($3, 'YYYY-MM') + INTERVAL '1 month'`,
+    [userId, accountId, month]
+  );
+  return rows[0].balance;
+}
+
+async function findAccount(userId, accountId) {
+  const { rows } = await query('SELECT id, name, type FROM accounts WHERE id = $1 AND user_id = $2', [accountId, userId]);
+  return rows[0] || null;
+}
+
+const PROJECTION_SELECT = `
+  SELECT id, name, starting_amount AS "startingAmount", monthly_contribution AS "monthlyContribution",
+         annual_rate AS "annualRate", months, created_at AS "createdAt"
+  FROM net_worth_projections`;
+
+async function createProjection(userId, data) {
+  const { rows } = await query(
+    `INSERT INTO net_worth_projections (user_id, name, starting_amount, monthly_contribution, annual_rate, months)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [userId, data.name, data.startingAmount, data.monthlyContribution, data.annualRate, data.months]
+  );
+  return (await query(`${PROJECTION_SELECT} WHERE id = $1`, [rows[0].id])).rows[0];
+}
+
+async function findProjections(userId) {
+  return (await query(`${PROJECTION_SELECT} WHERE user_id = $1 ORDER BY created_at DESC`, [userId])).rows;
+}
+
+async function removeProjection(userId, id) {
+  const { rowCount } = await query('DELETE FROM net_worth_projections WHERE id = $1 AND user_id = $2', [id, userId]);
+  return rowCount > 0;
+}
+
+module.exports = {
+  findAll,
+  findById,
+  create,
+  update,
+  remove,
+  summary,
+  countOwned,
+  reorder,
+  accountMonthBalance,
+  findAccount,
+  createProjection,
+  findProjections,
+  removeProjection,
+};

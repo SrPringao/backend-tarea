@@ -23,4 +23,20 @@ const authLimiter = rateLimit({
   message: { ok: false, error: { message: 'Demasiados intentos de autenticación, espera 15 minutos' } },
 });
 
-module.exports = { globalLimiter, authLimiter };
+// GraphQL: una sola URL concentra todas las operaciones, así que lleva su propio límite
+const graphqlLimiter = rateLimit({
+  ...baseOptions,
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  message: { errors: [{ message: 'Demasiadas peticiones a GraphQL, intenta más tarde', extensions: { code: 'RATE_LIMITED' } }] },
+});
+
+// Envío de correos (notificaciones de admin): evita usar la API para mandar correo masivo
+const mailLimiter = rateLimit({
+  ...baseOptions,
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  message: { ok: false, error: { message: 'Se alcanzó el límite de correos por hora' } },
+});
+
+module.exports = { globalLimiter, authLimiter, graphqlLimiter, mailLimiter };

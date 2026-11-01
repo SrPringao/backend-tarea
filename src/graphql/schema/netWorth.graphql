@@ -1,0 +1,67 @@
+"Activo (saldo, dinero que te deben) o deuda."
+type NetWorthEntry {
+  id: Int!
+  label: String!
+  "asset o debt"
+  kind: String!
+  amount: Float!
+  dueDate: String
+  sortOrder: Int!
+  accountId: Int
+  accountName: String
+  contactId: Int
+  contactName: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SyncNetWorthResult {
+  entry: NetWorthEntry!
+  previousAmount: Float!
+  "Mes cuyo saldo de la tarjeta se usó."
+  month: String!
+}
+
+"Punto de la proyección."
+type ProjectionPoint {
+  "Número de mes desde el inicio."
+  month: Int!
+  balance: Float!
+  contributed: Float!
+}
+
+"Simulación de crecimiento del patrimonio con aportación mensual e interés compuesto."
+type Projection {
+  id: Int!
+  name: String!
+  startingAmount: Float!
+  monthlyContribution: Float!
+  "Tasa anual en porcentaje."
+  annualRate: Float!
+  months: Int!
+  finalAmount: Float!
+  totalContributed: Float!
+  interestEarned: Float!
+  "Saldo cada `step` meses (12 = un punto por año) más el mes final."
+  schedule(step: Int = 12): [ProjectionPoint!]!
+  createdAt: DateTime!
+}
+
+extend type Query {
+  "OP-076. Proyecciones guardadas del usuario. Requiere token."
+  projections: [Projection!]!
+}
+
+extend type Mutation {
+  "OP-073. Define el orden de los registros de patrimonio según la posición de cada id. Requiere token."
+  reorderNetWorth(ids: [Int!]!): [NetWorthEntry!]!
+  "OP-074. Actualiza una deuda ligada a una tarjeta de crédito con el saldo de la tarjeta en el mes actual. Requiere token."
+  syncNetWorthWithAccount(entryId: Int!): SyncNetWorthResult!
+  """
+  OP-075. Crea una proyección. Si no se envía startingAmount se usa el patrimonio neto actual (mínimo 0).
+  annualRate en porcentaje (0 a 100), months de 1 a 600. Requiere token.
+  """
+  createProjection(name: String!, startingAmount: Float, monthlyContribution: Float!, annualRate: Float!, months: Int!): Projection!
+  "OP-077. Elimina una proyección. Requiere token."
+  deleteProjection(id: Int!): OperationResult!
+}

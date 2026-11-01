@@ -11,5 +11,7 @@ const budgets = require('./budgets.validator');
 const fixedExpenses = require('./fixedExpenses.validator');
 const netWorth = require('./netWorth.validator');
 const reports = require('./reports.validator');
+const automation = require('./automation.validator');
+const notifications = require('./notifications.validator');
 
-module.exports = { auth, users, accounts, categories, contacts, preferences, expenses, budgets, fixedExpenses, netWorth, reports };
+module.exports = { auth, users, accounts, categories, contacts, preferences, expenses, budgets, fixedExpenses, netWorth, reports, automation, notifications };

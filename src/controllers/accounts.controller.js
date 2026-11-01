@@ -24,7 +24,7 @@ async function list(req, res) {
   if (type) where.type = type;
   if (!includeArchived) where.archivedAt = null;
 
-  const accounts = await Account.findAll({ where, order: [['name', 'ASC']] });
+  const accounts = await Account.findAll({ where, order: [['sortOrder', 'ASC'], ['name', 'ASC']] });
   return ok(res, accounts);
 }
 
