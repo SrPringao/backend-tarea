@@ -7,6 +7,12 @@ const UserPreference = require('./UserPreference');
 const Account = require('./Account');
 const Category = require('./Category');
 const Contact = require('./Contact');
+const AuthToken = require('./AuthToken');
+const RevokedToken = require('./RevokedToken');
+const Device = require('./Device');
+const ApiToken = require('./ApiToken');
+const CardNameMapping = require('./CardNameMapping');
+const NotificationLog = require('./NotificationLog');
 
 // Relaciones
 User.hasOne(UserPreference, { foreignKey: 'userId', as: 'preferences', onDelete: 'CASCADE' });
@@ -21,4 +27,23 @@ Category.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(Contact, { foreignKey: 'userId', as: 'contacts', onDelete: 'CASCADE' });
 Contact.belongsTo(User, { foreignKey: 'userId' });
 
-module.exports = { sequelize, User, UserPreference, Account, Category, Contact };
+User.hasMany(AuthToken, { foreignKey: 'userId', onDelete: 'CASCADE' });
+User.hasMany(Device, { foreignKey: 'userId', onDelete: 'CASCADE' });
+User.hasMany(ApiToken, { foreignKey: 'userId', onDelete: 'CASCADE' });
+User.hasMany(CardNameMapping, { foreignKey: 'userId', onDelete: 'CASCADE' });
+CardNameMapping.belongsTo(Account, { foreignKey: 'accountId', as: 'account' });
+
+module.exports = {
+  sequelize,
+  User,
+  UserPreference,
+  Account,
+  Category,
+  Contact,
+  AuthToken,
+  RevokedToken,
+  Device,
+  ApiToken,
+  CardNameMapping,
+  NotificationLog,
+};

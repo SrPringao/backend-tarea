@@ -18,6 +18,7 @@ const User = sequelize.define(
     passwordHash: { type: DataTypes.TEXT, allowNull: false },
     role: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'user', validate: { isIn: [['user', 'admin']] } },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    emailVerifiedAt: { type: DataTypes.DATE },
   },
   {
     tableName: 'users',

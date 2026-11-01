@@ -11,6 +11,8 @@ const Account = sequelize.define(
     color: { type: DataTypes.STRING(7) },
     paymentDay: { type: DataTypes.SMALLINT, validate: { min: 1, max: 31 } },
     creditLimit: decimal('creditLimit'),
+    sortOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    imagePath: { type: DataTypes.TEXT },
     archivedAt: { type: DataTypes.DATE },
   },
   { tableName: 'accounts' }
